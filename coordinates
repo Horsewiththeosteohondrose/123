@@ -1,0 +1,30 @@
+import random, math
+n=int(input())#Ввод кол-ва точек
+massALL=[]
+massL=[]
+met=[]
+
+massALL=[[random.randint(-100,100),random.randint(-100,100)] for i in range(n)]#Генерация n кол-ва точек с координатами x и y
+
+for i in range(len(massALL)):
+    element1=massALL.pop(i)
+    for element2 in massALL:
+        if element1==element2:
+            continue
+        else:
+            massL.append(math.sqrt((element2[0]-element1[0])**2+(element2[1]-element1[1])**2))
+    m=2*(min(massL))
+    for sosed in massL:
+        if sosed<=m:
+            met.extend([sosed,'сосед'])
+        else:
+            met.append('не сосед')
+            continue
+    print('соседи',element1,list(zip(massALL,met)))    
+    massALL.insert(i,element1)
+    massL.clear()
+    met.clear()
+            
+        
+
+    
