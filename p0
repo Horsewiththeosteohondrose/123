@@ -1,0 +1,12 @@
+Было
+
+
+for i in range(n):
+    massONE.extend([random.randint(-100,100),random.randint(-100,100)])
+    massALL.append(massONE[:])
+    massONE.clear()
+    
+    
+    
+Стало
+massALL=[[random.randint(-100,100),random.randint(-100,100)] for i in range(n)]
