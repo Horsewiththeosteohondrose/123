@@ -1,0 +1,190 @@
+package ru.hh.problems;
+
+import java.util.Random;
+import java.util.regex.Pattern;
+
+public class Problem2 extends AbstractProblem {
+	protected static final String NUMERIC_PATTERN = "\\d+";
+	protected static final String ZERO = "0";
+
+	protected static final String MESSAGE_PROBLEM_INFO = "Бесконечная последовательность\n" +
+			"Возьмём бесконечную цифровую последовательность, образованную склеиванием последовательных положительных чисел: S = 123456789101112131415...\n" +
+			"Определите первое вхождение заданной последовательности A в бесконечной последовательности S (нумерация начинается с 1).\n\n" +
+			"Для ввода используйте набор цифр.";
+	protected static final String MESSAGE_INCORRECT_STRING = "Некорректные данные. На ввод ожидаются только цифры: %s";
+	protected static final String MESSAGE_FOUND_SEQUENCE = "Найдена последовательность '%s', удовлетворяющая введенным данным '%s'";
+	protected static final String MESSAGE_NO_SEQUENCE = "Введенная комбинация и есть число: '%s'";
+	protected static final String MESSAGE_RESULT = "Позиция последовательности: %s";
+
+	@Override
+	public void printInfo() {
+		System.out.println(MESSAGE_PROBLEM_INFO);
+	}
+
+	@Override
+	public void handle(String input) {
+		if (isCorrect(input)) {
+			print(findPosition(input));
+		} else {
+			System.out.println(String.format(MESSAGE_INCORRECT_STRING, input));
+		}
+	}
+
+	@Override
+	public String generate(int size, int digits) {
+		digits = Math.min(digits, 10);
+
+		final Random randomizer = new Random(111);
+		final StringBuilder builder = new StringBuilder();
+
+		for (int i = 0; i < size; i ++) {
+			builder.append(randomizer.nextInt(digits));
+		}
+
+		return builder.toString();
+	}
+
+
+
+
+	protected boolean isCorrect(String input) {
+		return input != null && input.length() > 0 && Pattern.matches(NUMERIC_PATTERN, input);
+	}
+
+	protected long findPosition(String input) {
+		return calculatePosition(findFirstValue(input));
+	}
+
+	protected ResultWrapper findFirstValue(String input) {
+		long longValueTemp;
+		String sequence;
+		int positionInSequence;
+
+		// Если строка содержит только нули, тогда результат: 10^count(0). Перебор невозможен, т.к. парсер сокращает нули.
+		final int zeroCount = input.length() - input.replace(ZERO, "").length();
+		if (zeroCount == input.length()) {
+			longValueTemp = (long) Math.pow(10, zeroCount);
+
+			System.out.println(String.format(MESSAGE_FOUND_SEQUENCE, longValueTemp, input));
+			return new ResultWrapper(longValueTemp, 0);
+		}
+
+		// Если строка начинается с нулей, то обрабатываем отдельно. Перебор невозможен, т.к. парсер сокращает нули.
+		if (input.startsWith(ZERO)) {
+			int offset = 1;
+			while (input.substring(offset, offset + 1).equals(ZERO)) {
+				offset ++;
+			}
+
+			int length = 1;
+			while (offset + length <= input.length()) {
+				longValueTemp = Long.parseLong(input.substring(offset, offset + length));
+				longValueTemp --;
+				length ++;
+
+				if (longValueTemp < 1) {
+					continue;
+				}
+
+				sequence = createSequence(longValueTemp, offset + input.length());
+				positionInSequence = sequence.indexOf(input);
+				if (positionInSequence >= 0) {
+					System.out.println(String.format(MESSAGE_FOUND_SEQUENCE, sequence, input));
+
+					return new ResultWrapper(longValueTemp, positionInSequence);
+				}
+			}
+
+			// Если не можем достать из последовательности значение, то просто переносим все что правее нулей влево
+			longValueTemp = Long.parseLong(input.substring(offset, input.length())) * (long) Math.pow(10, offset);
+			sequence = createSequence(longValueTemp, input.length() + offset);
+			positionInSequence = sequence.indexOf(input);
+			if (positionInSequence >= 0) {
+				System.out.println(String.format(MESSAGE_FOUND_SEQUENCE, sequence, input));
+
+				return new ResultWrapper(longValueTemp, positionInSequence);
+			}
+		}
+
+		// Полный перебор, для строки, в которой больше одного символа
+		for (int length = 1; length < input.length(); length ++) {
+			for (int offset = 0; offset <= input.length() - length; offset ++) {
+				longValueTemp = Long.parseLong(input.substring(offset, offset + length));
+				if (offset > 0) {
+					longValueTemp --;
+				}
+
+				if (longValueTemp < 1) {
+					continue;
+				}
+
+				sequence = createSequence(longValueTemp, input.length() + offset);
+				positionInSequence = sequence.indexOf(input);
+				if (positionInSequence >= 0) {
+					System.out.println(String.format(MESSAGE_FOUND_SEQUENCE, sequence, input));
+
+					return new ResultWrapper(longValueTemp, positionInSequence);
+				}
+			}
+		}
+
+		// Стандартный ответ, на случай, если мы не находим нужную комбинацию
+		System.out.println(String.format(MESSAGE_NO_SEQUENCE, input));
+		return new ResultWrapper(input, 0);
+	}
+
+	protected String createSequence(long startValue, long minLength) {
+		final StringBuilder builder = new StringBuilder();
+
+		long value = startValue;
+		builder.append(value);
+		while (builder.length() < minLength) {
+			value ++;
+			builder.append(value);
+		}
+
+		return builder.toString();
+	}
+
+	protected long calculatePosition(ResultWrapper result) {
+		long value = result.longValue - 1;
+		long length = Long.toString(value).length();
+
+		long floor;
+		long position = 1;
+		while (length > 0) {
+			floor = (long) Math.pow(10, length - 1) - 1;
+			position += (value - floor) * length;
+			value = floor;
+
+			length --;
+		}
+
+		return position + result.offset;
+	}
+
+	protected void print(long position) {
+		System.out.println(String.format(MESSAGE_RESULT, position));
+	}
+
+
+
+
+	protected static class ResultWrapper {
+		public String stringValue;
+		public long longValue;
+		public int offset;
+
+		public ResultWrapper(String value, int offset) {
+			stringValue = value;
+			longValue = Long.parseLong(value);
+			this.offset = offset;
+		}
+
+		public ResultWrapper(long value, int offset) {
+			longValue = value;
+			stringValue = Long.toString(value);
+			this.offset = offset;
+		}
+	}
+}
